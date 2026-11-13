@@ -115,7 +115,7 @@ def study_files(study_id: str | int, page: int = 0, size: int = 25) -> list[dict
 
 def _tabular_frame(payload: bytes, filename: str) -> pd.DataFrame:
     suffix = filename.lower().split("?")[0]
-    separator = "\\t" if suffix.endswith(".tsv") else None
+    separator = "\t" if suffix.endswith(".tsv") else None
     try:
         frame = pd.read_csv(BytesIO(payload), sep=separator, engine="python")
     except Exception as exc:
