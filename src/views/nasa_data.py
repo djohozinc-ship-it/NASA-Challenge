@@ -76,11 +76,16 @@ def _render_biology():
         st.markdown(f"[Télécharger depuis NASA OSDR]({item['download_url']})")
         filename = str(item["name"]).lower()
         if filename.endswith(".zip"):
-            try:
-                members = _archive_members(item)
-            except nasa_osdr.OSDRError as exc:
-                members = []
-                st.caption(f"Aperçu ZIP indisponible : {exc}")
+            archive_state_key = f"nasa_members_{study_id}_{index}"
+            if archive_state_key not in st.session_state:
+                if st.button("Explorer cette archive", key=f"nasa_archive_{study_id}_{index}"):
+                    try:
+                        with st.spinner("Inventaire du contenu de l'archive..."):
+                            st.session_state[archive_state_key] = _archive_members(item)
+                    except nasa_osdr.OSDRError as exc:
+                        st.warning(str(exc))
+                        st.session_state[archive_state_key] = []
+            members = st.session_state.get(archive_state_key, [])
             if members:
                 member = st.selectbox(
                     "Tableau contenu dans l'archive",
