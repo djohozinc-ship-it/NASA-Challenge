@@ -12,7 +12,7 @@ from src.detector import (
 from src.tracker import STATES
 from src.ui import CSS, banner, header
 from src.views import (
-    actions_view, checkin, method, overview, report_view, trends, validation_view,
+    actions_view, checkin, method, nasa_data, overview, report_view, trends, validation_view,
 )
 from src.views.context import build_context
 
@@ -152,11 +152,12 @@ else:
 
 n_open = len([i for i in ctx.items if i["state"] in ("a_faire", "escalade")])
 tabs = st.tabs(["Vue d'ensemble", "Bilan du jour", f"Actions ({n_open})" if n_open else "Actions",
-                "Tendances", "Rapport", "Validation", "Méthode"])
+                "Tendances", "Données NASA", "Rapport", "Validation", "Méthode"])
 for tab, (name, render) in zip(tabs, [
     ("Vue d'ensemble", overview.render), ("Bilan du jour", checkin.render),
     ("Actions", actions_view.render), ("Tendances", trends.render),
-    ("Rapport", report_view.render), ("Validation", validation_view.render),
+    ("Données NASA", nasa_data.render), ("Rapport", report_view.render),
+    ("Validation", validation_view.render),
     ("Méthode", method.render),
 ]):
     with tab:
