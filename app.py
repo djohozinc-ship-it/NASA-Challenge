@@ -1,4 +1,4 @@
-"""BioSpace : logiciel de suivi de santé pour astronautes (fonctionne hors ligne)."""
+"""BioSpace : suivi local de santé et consultation facultative des données NASA OSDR."""
 import logging
 
 import streamlit as st
@@ -117,7 +117,7 @@ with st.sidebar.expander("Données"):
         storage.delete_astronaut(conn, current_id)
         st.session_state.pop("current_id", None)
         st.rerun()
-st.sidebar.caption("Données synthétiques ou auto-déclarées. Ne remplace pas un avis médical.")
+st.sidebar.caption("Données de suivi saisies ou simulées ; jeux de recherche NASA consultables séparément. Ne remplace pas un avis médical.")
 
 # --- En-tête et bandeau de synthèse ---
 st.markdown(
