@@ -113,39 +113,62 @@ def study_files(study_id: str | int, page: int = 0, size: int = 25) -> list[dict
     return records
 
 
-def download_table_file(file_record: dict) -> tuple[pd.DataFrame, str]:
-    """Télécharge un petit fichier tabulaire public et retourne (table, nom interne)."""
-    payload = _read_url(file_record["download_url"])
-    name = str(file_record.get("name") or "dataset")
-    suffix = name.lower().split("?")[0]
-
-    if suffix.endswith(".zip"):
-        try:
-            archive = ZipFile(BytesIO(payload))
-        except BadZipFile as exc:
-            raise OSDRError("L'archive téléchargée n'est pas un ZIP valide.") from exc
-        candidates = [
-            item for item in archive.infolist()
-            if not item.is_dir() and item.filename.lower().endswith((".csv", ".tsv", ".txt"))
-            and item.file_size <= MAX_DOWNLOAD_BYTES
-            and not item.filename.startswith(("/", "\\"))
-            and ".." not in item.filename.replace("\\", "/").split("/")
-        ]
-        if not candidates:
-            raise OSDRError("Aucun fichier CSV/TSV/TXT de taille acceptable dans cette archive.")
-        # Le choix du fichier interne est laissé à l'interface pour éviter un choix arbitraire.
-        raise OSDRError(
-            "Cette archive contient plusieurs fichiers possibles. "
-            "Téléchargez-la depuis la fiche OSDR et sélectionnez le tableau à analyser."
-        )
-
-    if not suffix.endswith((".csv", ".tsv", ".txt")):
-        raise OSDRError("Format non pris en charge pour l'aperçu. Formats acceptés : CSV, TSV ou TXT.")
-    separator = "\t" if suffix.endswith(".tsv") else None
+def _tabular_frame(payload: bytes, filename: str) -> pd.DataFrame:
+    suffix = filename.lower().split("?")[0]
+    separator = "\\t" if suffix.endswith(".tsv") else None
     try:
         frame = pd.read_csv(BytesIO(payload), sep=separator, engine="python")
     except Exception as exc:
         raise OSDRError(f"Lecture du tableau impossible : {exc}") from exc
     if frame.empty:
         raise OSDRError("Le fichier ne contient aucune ligne de données.")
-    return frame, name
+    return frame
+
+
+def archive_members(file_record: dict) -> list[str]:
+    """Liste les tableaux raisonnablement petits présents dans une archive ZIP publique."""
+    payload = _read_url(file_record["download_url"])
+    try:
+        with ZipFile(BytesIO(payload)) as archive:
+            return [
+                item.filename for item in archive.infolist()
+                if not item.is_dir()
+                and item.filename.lower().endswith((".csv", ".tsv", ".txt"))
+                and item.file_size <= MAX_DOWNLOAD_BYTES
+                and not item.filename.startswith(("/", "\\\\"))
+                and ".." not in item.filename.replace("\\\\", "/").split("/")
+            ]
+    except BadZipFile as exc:
+        raise OSDRError("L'archive téléchargée n'est pas un ZIP valide.") from exc
+
+
+def download_table_file(file_record: dict, member: str | None = None) -> tuple[pd.DataFrame, str]:
+    """Télécharge un petit fichier tabulaire public, éventuellement depuis un ZIP."""
+    payload = _read_url(file_record["download_url"])
+    name = str(file_record.get("name") or "dataset")
+    suffix = name.lower().split("?")[0]
+
+    if suffix.endswith(".zip"):
+        try:
+            with ZipFile(BytesIO(payload)) as archive:
+                candidates = [
+                    item.filename for item in archive.infolist()
+                    if not item.is_dir()
+                    and item.filename.lower().endswith((".csv", ".tsv", ".txt"))
+                    and item.file_size <= MAX_DOWNLOAD_BYTES
+                    and not item.filename.startswith(("/", "\\\\"))
+                    and ".." not in item.filename.replace("\\\\", "/").split("/")
+                ]
+                chosen = member or (candidates[0] if len(candidates) == 1 else None)
+                if chosen not in candidates:
+                    raise OSDRError("Sélectionnez un fichier tabulaire présent dans l'archive.")
+                info = archive.getinfo(chosen)
+                if info.file_size > MAX_DOWNLOAD_BYTES:
+                    raise OSDRError("Le tableau interne dépasse la limite d'aperçu.")
+                return _tabular_frame(archive.read(chosen), chosen), f"{name} · {chosen}"
+        except BadZipFile as exc:
+            raise OSDRError("L'archive téléchargée n'est pas un ZIP valide.") from exc
+
+    if not suffix.endswith((".csv", ".tsv", ".txt")):
+        raise OSDRError("Format non pris en charge pour l'aperçu. Formats acceptés : CSV, TSV, TXT ou ZIP.")
+    return _tabular_frame(payload, name), name
