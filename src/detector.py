@@ -8,8 +8,6 @@ critiques absolus déclenchent l'état rouge sans attendre.
 Le DataFrame d'entrée contient une ligne par jour calendaire (voir
 `storage.load_frame`), avec des NaN pour les mesures manquantes.
 """
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 
@@ -204,11 +202,13 @@ def current_scores(z_df):
     return {d: 0.0 if pd.isna(s) else max(0.0, s) for d, s in scores.items()}
 
 if __name__ == "__main__":
+    # Utilise le générateur commun : l'exécution du détecteur ne dépend
+    # plus de fichiers CSV présents ou manquants dans data/.
     from src.config import SCENARIO_NAMES
+    from src.generator import generate_demo
 
-    data_dir = Path(__file__).parent.parent / "data"
     for scenario in SCENARIO_NAMES:
-        df = pd.read_csv(data_dir / f"{scenario}.csv", parse_dates=["date"])
+        df = generate_demo(scenario)
         print(f"\n--- {scenario} ---")
         for domain, v in evaluate(df)[1].items():
             print(f"{domain:20s} {v['status']}")
