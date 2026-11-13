@@ -64,6 +64,14 @@ if not astronauts:
                 unsafe_allow_html=True)
     st.info("Pour une démonstration immédiate, crée un profil de type « Démonstration ». "
             "Pour un usage réel, crée un profil réel puis saisis un bilan quotidien ou importe un CSV.")
+    start_tab, nasa_tab = st.tabs(["Démarrer", "Données NASA"])
+    with start_tab:
+        st.markdown(
+            "Crée un profil dans la barre latérale pour accéder au suivi quotidien, "
+            "aux tendances, aux alertes et aux rapports."
+        )
+    with nasa_tab:
+        safe("Données NASA", nasa_data.render, None)
     st.stop()
 
 ids = [a["id"] for a in astronauts]
