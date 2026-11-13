@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+
+# Données locales et journaux (ne jamais publier de données personnelles)
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+data/*.log
+*.log
+
+# Secrets et configuration locale
+.env
+.env.*
+!.env.example
+
+# Construction
+build/
+dist/
+*.spec
+
+# Éditeurs et systèmes
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Sauvegardes temporaires
+*.bak
+*~
