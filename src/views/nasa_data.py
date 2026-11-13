@@ -1,6 +1,4 @@
 """Vue de consultation des données humaines NASA OSDR et des sources physiologiques NLSP."""
-import json
-
 import streamlit as st
 
 from src import nasa_osdr
@@ -27,8 +25,13 @@ def _files(study_id):
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
-def _preview(file_record):
-    return nasa_osdr.download_table_file(file_record)
+def _archive_members(file_record):
+    return nasa_osdr.archive_members(file_record)
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def _preview(file_record, member=None):
+    return nasa_osdr.download_table_file(file_record, member=member)
 
 
 def _render_biology():
@@ -71,19 +74,42 @@ def _render_biology():
         size_text = f"{size} octets" if size else "taille non renseignée"
         st.markdown(f"**{item['name']}** · {size_text}")
         st.markdown(f"[Télécharger depuis NASA OSDR]({item['download_url']})")
-        if str(item["name"]).lower().endswith((".csv", ".tsv", ".txt")):
-            if st.button("Aperçu du tableau", key=f"nasa_preview_{study_id}_{index}"):
-                try:
-                    with st.spinner("Téléchargement et lecture du fichier NASA..."):
-                        frame, source_name = _preview(item)
-                    st.caption(f"Source : OSD-{study_id} · {source_name} · aperçu des 100 premières lignes")
-                    st.dataframe(frame.head(100), width="stretch", hide_index=True)
-                    st.caption(
-                        "Les colonnes et unités sont celles du fichier source. "
-                        "Aucune conversion vers les indicateurs cliniques BioSpace n'est effectuée."
-                    )
-                except nasa_osdr.OSDRError as exc:
-                    st.warning(str(exc))
+        filename = str(item["name"]).lower()
+        if filename.endswith(".zip"):
+            try:
+                members = _archive_members(item)
+            except nasa_osdr.OSDRError as exc:
+                members = []
+                st.caption(f"Aperçu ZIP indisponible : {exc}")
+            if members:
+                member = st.selectbox(
+                    "Tableau contenu dans l'archive",
+                    members,
+                    key=f"nasa_member_{study_id}_{index}",
+                )
+                preview_key = f"nasa_preview_{study_id}_{index}"
+            else:
+                member = None
+                preview_key = None
+        elif filename.endswith((".csv", ".tsv", ".txt")):
+            member = None
+            preview_key = f"nasa_preview_{study_id}_{index}"
+        else:
+            member = None
+            preview_key = None
+
+        if preview_key and st.button("Aperçu du tableau", key=preview_key):
+            try:
+                with st.spinner("Téléchargement et lecture du fichier NASA..."):
+                    frame, source_name = _preview(item, member)
+                st.caption(f"Source : OSD-{study_id} · {source_name} · aperçu des 100 premières lignes")
+                st.dataframe(frame.head(100), width="stretch", hide_index=True)
+                st.caption(
+                    "Les colonnes et unités sont celles du fichier source. "
+                    "Aucune conversion vers les indicateurs cliniques BioSpace n'est effectuée."
+                )
+            except nasa_osdr.OSDRError as exc:
+                st.warning(str(exc))
         if item.get("description"):
             st.caption(item["description"])
 
