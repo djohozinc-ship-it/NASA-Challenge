@@ -141,3 +141,12 @@ Seuils illustratifs, sans validation clinique ; référence fixe de 30 jours ; d
 démonstration ; conseils généraux non médicaux ; hémoglobine et symptômes sont des proxys ou des
 auto-déclarations. Pistes : baseline adaptative validée par un médecin, capteurs réels, synchronisation
 chiffrée avec le sol au retour de la liaison, multi-équipage.
+
+
+## Documentation du projet
+
+- [Licence MIT](LICENSE) — conditions de réutilisation du code.
+- [Références scientifiques et ressources NASA](REFERENCES.md) — publications, études OSDR et portails officiels.
+- [Utilisation de l'IA](AI_USAGE.md) — déclaration transparente de l'assistance par IA.
+- [Captures d'écran](screenshots/) — illustrations de l'interface réelle.
+- [Sources de données NASA](docs/NASA_DATA_SOURCES.md) — inventaire détaillé des études et limites scientifiques.
