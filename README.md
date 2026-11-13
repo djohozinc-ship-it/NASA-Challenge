@@ -23,7 +23,7 @@ rapport pour l'équipe médicale. Tout fonctionne **hors ligne**.
 | **Boucle d'action suivie** | À faire, fait, reporté, signalé. Escalade automatique vers l'équipe médicale sans action. |
 | **Rapport médical** | PDF (état, alertes, indicateurs, tendances, journal) et CSV, générés localement. |
 | **Persistance locale** | Base SQLite, profils multiples, journal des événements, sauvegarde en un clic. |
-| **Mode autonome** | Aucun appel réseau, aucune ressource externe, aucune liaison au système terrestre requise. |
+| **Mode autonome** | Le suivi local reste utilisable sans réseau ; la consultation OSDR est facultative et nécessite Internet. |\n| **Données NASA** | Consultation des études humaines OSDR et de leurs fichiers publics, avec liens vers les archives physiologiques NLSP. |
 | **Validation mesurée** | Page dédiée : fausses alertes et délais de détection sur des centaines de missions simulées. |
 
 ## Démarrage rapide
@@ -103,7 +103,7 @@ app.py                  Interface (Streamlit) : profils, onglets
 .streamlit/config.toml  Thème et paramètres Streamlit
 launcher.py             Lanceur local (port libre, navigateur, dossier de données)
 build_exe.py            Construction de l'exécutable (PyInstaller)
-src/config.py           Indicateurs, domaines, bornes, seuils critiques
+src/config.py           Indicateurs, domaines, bornes, seuils critiques\nsrc/nasa_osdr.py        Client prudent de l'API publique NASA OSDR\nsrc/views/nasa_data.py  Consultation des études biologiques OSDR et sources physiologiques\ndocs/NASA_DATA_SOURCES.md Inventaire des sources, licences et limites d'accès
 src/generator.py        Données synthétiques et 8 scénarios
 src/detector.py         Baseline, z-scores, persistance, seuils critiques
 src/storage.py          Base SQLite : profils, mesures, journal, actions
@@ -130,8 +130,10 @@ les valeurs hors bornes plausibles sont rejetées et listées, sans jamais bloqu
 
 ## Données et confidentialité
 
-Tout reste sur l'ordinateur : base `data/biospace.db` (ou dossier utilisateur pour l'exécutable) et journal
-`biospace.log`. Aucune télémétrie (`gatherUsageStats` désactivé), aucune requête externe.
+La base locale des profils et le journal restent sur l'ordinateur : `data/biospace.db` (ou dossier utilisateur
+pour l'exécutable) et `biospace.log`. Aucune télémétrie (`gatherUsageStats` désactivé). L'onglet **Données NASA**
+effectue, uniquement à la demande, des requêtes HTTPS vers l'API officielle OSDR pour lire les métadonnées
+et afficher les fichiers publics ; il ne copie pas ces observations dans la base des profils.
 
 ## Limites
 
