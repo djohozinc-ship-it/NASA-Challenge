@@ -100,6 +100,7 @@ Les seuils critiques absolus ne sont pas inclus dans ces mesures.
 
 ```
 app.py                  Interface (Streamlit) : profils, onglets
+.streamlit/config.toml  Thème et paramètres Streamlit
 launcher.py             Lanceur local (port libre, navigateur, dossier de données)
 build_exe.py            Construction de l'exécutable (PyInstaller)
 src/config.py           Indicateurs, domaines, bornes, seuils critiques
