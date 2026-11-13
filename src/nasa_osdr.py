@@ -35,6 +35,9 @@ def _read_url(url: str, max_bytes: int = MAX_DOWNLOAD_BYTES) -> bytes:
     )
     try:
         with urllib.request.urlopen(request, timeout=25) as response:
+            final_url = urllib.parse.urlparse(response.geturl())
+            if final_url.scheme != "https" or final_url.hostname not in ALLOWED_HOSTS:
+                raise OSDRError("La redirection du téléchargement sort du serveur OSDR autorisé.")
             length = response.headers.get("Content-Length")
             if length and int(length) > max_bytes:
                 raise OSDRError("Fichier trop volumineux pour l'aperçu intégré.")
