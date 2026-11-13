@@ -36,3 +36,23 @@ Thumbs.db
 # Sauvegardes temporaires
 *.bak
 *~
+
+# Streamlit secrets (never commit credentials)
+.streamlit/secrets.toml
+
+# Local databases, journals and private data
+data/*.db
+data/*.db-*
+data/*.sqlite
+data/*.sqlite-*
+data/*.sqlite3
+data/*.sqlite3-*
+data/*.log
+data/raw/
+data/private/
+
+# Generated local exports and reports
+exports/
+reports/
+*.tmp
+*.part
