@@ -23,7 +23,7 @@ rapport pour l'équipe médicale. Tout fonctionne **hors ligne**.
 | **Boucle d'action suivie** | À faire, fait, reporté, signalé. Escalade automatique vers l'équipe médicale sans action. |
 | **Rapport médical** | PDF (état, alertes, indicateurs, tendances, journal) et CSV, générés localement. |
 | **Persistance locale** | Base SQLite, profils multiples, journal des événements, sauvegarde en un clic. |
-| **Mode autonome** | Aucun appel réseau, aucune ressource externe, aucune liaison sol requise. |
+| **Mode autonome** | Aucun appel réseau, aucune ressource externe, aucune liaison au système terrestre requise. |
 | **Validation mesurée** | Page dédiée : fausses alertes et délais de détection sur des centaines de missions simulées. |
 
 ## Démarrage rapide
