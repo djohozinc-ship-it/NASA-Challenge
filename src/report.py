@@ -11,6 +11,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas as pdfcanvas
 from reportlab.platypus import (
     Image, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
 )
@@ -40,6 +41,11 @@ def _t(text):
             .replace("σ", "sigma").replace("‑", "-").replace(" ", " "))
     text = text.encode("cp1252", errors="replace").decode("cp1252")
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _b(text):
+    """Libellé en gras, échappé comme _t."""
+    return "<b>" + _t(text) + "</b>"
 
 
 def _styles():
@@ -77,6 +83,41 @@ def _table(data, widths, status_col=None, statuses=None):
                       ("FONTNAME", (status_col, r), (status_col, r), "Helvetica-Bold")]
     t.setStyle(TableStyle(style))
     return t
+
+
+class _NumberedCanvas(pdfcanvas.Canvas):
+    """Canvas qui connaît le nombre total de pages (« Page 2 / 4 »)."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._saved = []
+
+    def showPage(self):
+        self._saved.append(dict(self.__dict__))
+        self._startPage()
+
+    def save(self):
+        total = len(self._saved)
+        for state in self._saved:
+            self.__dict__.update(state)
+            self.setFont("Helvetica", 7)
+            self.setFillColor(GREY)
+            self.drawRightString(A4[0] - 18 * mm, 10 * mm, f"Page {self._pageNumber} / {total}")
+            super().showPage()
+        super().save()
+
+
+def _draw_logo(c, x, y, size):
+    """Logo BioSpace dessiné en vectoriel : une planète et son orbite."""
+    c.saveState()
+    c.setStrokeColor(colors.HexColor("#6EA0FF"))
+    c.setLineWidth(size * 0.07)
+    c.ellipse(x - size, y - size * 0.45, x + size, y + size * 0.45, stroke=1, fill=0)
+    c.setFillColor(colors.HexColor("#4F8BF9"))
+    c.circle(x, y, size * 0.55, stroke=0, fill=1)
+    c.setFillColor(colors.HexColor("#F5B041"))
+    c.circle(x + size * 0.82, y + size * 0.25, size * 0.14, stroke=0, fill=1)
+    c.restoreState()
 
 
 def _trend_figure(df, indicators):
@@ -122,30 +163,85 @@ def build_pdf(astronaut, df, z, details, items, events, as_of):
     as_of = pd.Timestamp(as_of)
     day = (as_of - df["date"].iloc[0]).days + 1 if len(df) else 0
 
+    is_demo = bool(astronaut.get("is_demo"))
+    report_id = f"BSR-{astronaut.get('id', 0):04d}-{as_of:%Y%m%d}" if isinstance(astronaut.get("id"), int) \
+        else f"BSR-{as_of:%Y%m%d}"
+
     def footer(canvas, doc):
+        width, height = A4
         canvas.saveState()
+        if is_demo:   # filigrane : ces données ne sont pas celles d'une personne réelle
+            canvas.saveState()
+            canvas.setFont("Helvetica-Bold", 34)
+            canvas.setFillColor(colors.HexColor("#E8ECF4"))
+            canvas.translate(width / 2, height / 2)
+            canvas.rotate(35)
+            canvas.drawCentredString(0, 0, "DONNEES DE DEMONSTRATION")
+            canvas.restoreState()
+        canvas.setFillColor(NAVY)
+        canvas.rect(0, height - 24 * mm, width, 24 * mm, stroke=0, fill=1)
+        _draw_logo(canvas, 28 * mm, height - 12 * mm, 6 * mm)
+        canvas.setFillColor(colors.white)
+        canvas.setFont("Helvetica-Bold", 15)
+        canvas.drawString(40 * mm, height - 11 * mm, "BioSpace")
+        canvas.setFont("Helvetica", 8.5)
+        canvas.setFillColor(colors.HexColor("#B7C4DC"))
+        canvas.drawString(40 * mm, height - 16.5 * mm, _t("Surveillance de santé de l'équipage - rapport pour l'équipe médicale"))
+        canvas.setFont("Helvetica", 8)
+        canvas.drawRightString(width - 18 * mm, height - 11 * mm, report_id)
+        canvas.drawRightString(width - 18 * mm, height - 16.5 * mm, f"{datetime.now():%d/%m/%Y %H:%M}")
+        canvas.setStrokeColor(LINE)
+        canvas.line(18 * mm, 14 * mm, width - 18 * mm, 14 * mm)
         canvas.setFont("Helvetica", 7)
         canvas.setFillColor(GREY)
-        canvas.drawString(18 * mm, 10 * mm,
-                          _t("BioSpace - données synthétiques ou auto-déclarées, ne remplace pas un avis médical."))
-        canvas.drawRightString(A4[0] - 18 * mm, 10 * mm, f"Page {doc.page}")
+        canvas.drawString(18 * mm, 10 * mm, _t(
+            "Rapport automatique de suivi, non un certificat médical. Données synthétiques ou auto-déclarées. "
+            "Ne remplace pas un avis médical."))
         canvas.restoreState()
 
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm,
-                            topMargin=16 * mm, bottomMargin=18 * mm,
+                            topMargin=32 * mm, bottomMargin=20 * mm,
                             title="Rapport de santé BioSpace", author="BioSpace")
     s = []
-    s.append(Paragraph(_t("Rapport de santé pour l'équipe médicale"), st["title"]))
-    s.append(Paragraph(_t(
-        f"Astronaute : <b>{astronaut['name']}</b> &nbsp;|&nbsp; Jour de mission : {day} "
-        f"&nbsp;|&nbsp; Données jusqu'au {as_of:%d/%m/%Y} &nbsp;|&nbsp; "
-        f"Édité le {datetime.now():%d/%m/%Y %H:%M}").replace("&amp;nbsp;", "&nbsp;")
-        .replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>"), st["sub"]))
+    s.append(Paragraph(_t("Rapport de santé"), st["title"]))
+    s.append(Paragraph(_t("Suivi par rapport à la référence personnelle de l'astronaute"), st["sub"]))
+
+    kind = "Démonstration (données simulées)" if is_demo else "Profil réel (données saisies ou importées)"
+    ident = [
+        [Paragraph(_b("Astronaute"), st["cell"]), Paragraph(_t(astronaut["name"]), st["cell"]),
+         Paragraph(_b("Référence"), st["cell"]), Paragraph(_t(report_id), st["cell"])],
+        [Paragraph(_b("Jour de mission"), st["cell"]), Paragraph(_t(str(day)), st["cell"]),
+         Paragraph(_b("Données jusqu'au"), st["cell"]), Paragraph(_t(f"{as_of:%d/%m/%Y}"), st["cell"])],
+        [Paragraph(_b("Type de profil"), st["cell"]), Paragraph(_t(kind), st["cell"]),
+         Paragraph(_b("Édité le"), st["cell"]), Paragraph(_t(f"{datetime.now():%d/%m/%Y à %H:%M}"), st["cell"])],
+    ]
+    ident_table = Table(ident, colWidths=[34 * mm, 58 * mm, 34 * mm, 48 * mm])
+    ident_table.setStyle(TableStyle([
+        ("BOX", (0, 0), (-1, -1), 0.6, LINE), ("INNERGRID", (0, 0), (-1, -1), 0.3, LINE),
+        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#F5F7FB")),
+        ("BACKGROUND", (2, 0), (2, -1), colors.HexColor("#F5F7FB")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    s.append(ident_table)
+    s.append(Spacer(1, 8))
 
     summ = mission_summary(details)
-    headline = (f"{summ['rouge']} domaine(s) en action requise, {summ['orange']} à surveiller, "
-                f"{summ['vert']} normaux" + (f", {summ['inconnu']} en calibration" if summ["inconnu"] else ""))
-    s.append(Paragraph(_t("Synthèse : " + headline), st["p"]))
+    chips = [[str(summ["rouge"]), str(summ["orange"]), str(summ["vert"]), str(summ["inconnu"])],
+             ["Action requise", "À surveiller", "Normal", "Calibration"]]
+    chips[1] = [_t(x) for x in chips[1]]
+    chip_table = Table(chips, colWidths=[43.5 * mm] * 4)
+    chip_style = [("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                  ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("FONTSIZE", (0, 0), (-1, 0), 18),
+                  ("FONTSIZE", (0, 1), (-1, 1), 8), ("TEXTCOLOR", (0, 0), (-1, -1), colors.white),
+                  ("TOPPADDING", (0, 0), (-1, 0), 6), ("BOTTOMPADDING", (0, 1), (-1, 1), 6),
+                  ("LINEAFTER", (0, 0), (2, -1), 2, colors.white)]
+    for col, key in enumerate(("rouge", "orange", "vert", "inconnu")):
+        chip_style.append(("BACKGROUND", (col, 0), (col, 1), colors.HexColor(STATUS_COLOR[key])))
+        if key == "orange":   # texte sombre sur l'orange : contraste lisible
+            chip_style.append(("TEXTCOLOR", (col, 0), (col, 1), NAVY))
+    chip_table.setStyle(TableStyle(chip_style))
+    s.append(chip_table)
 
     # 1. Domaines
     s.append(Paragraph(_t("1. État par système physiologique"), st["h"]))
@@ -214,7 +310,24 @@ def build_pdf(astronaut, df, z, details, items, events, as_of):
                          Paragraph(_t(e["detail"] or ""), st["cell"])])
         s.append(_table(data, [22 * mm, 40 * mm, 38 * mm, 74 * mm]))
 
-    doc.build(s, onFirstPage=footer, onLaterPages=footer)
+    review = Table([
+        [Paragraph(_b("Revue par l'équipe médicale") + _t(" (à compléter par un professionnel de santé)"), st["cell"]), "", ""],
+        [Paragraph(_t("Nom et fonction"), st["small"]), Paragraph(_t("Date"), st["small"]),
+         Paragraph(_t("Signature"), st["small"])],
+        ["", "", ""],
+    ], colWidths=[78 * mm, 38 * mm, 58 * mm], rowHeights=[8 * mm, 6 * mm, 14 * mm])
+    review.setStyle(TableStyle([
+        ("SPAN", (0, 0), (-1, 0)), ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F5F7FB")),
+        ("BOX", (0, 0), (-1, -1), 0.6, LINE), ("INNERGRID", (0, 1), (-1, -1), 0.3, LINE),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    s.append(Spacer(1, 12))
+    s.append(KeepTogether([review, Spacer(1, 4), Paragraph(_t(
+        "Ce document est produit automatiquement par BioSpace à partir des mesures enregistrées. "
+        "Il n'est ni un diagnostic ni un certificat médical : seule la revue ci-dessus, signée par un "
+        "professionnel de santé, engage l'équipe médicale."), st["small"])]))
+
+    doc.build(s, onFirstPage=footer, onLaterPages=footer, canvasmaker=_NumberedCanvas)
     return buf.getvalue()
 
 
