@@ -1,5 +1,7 @@
 # BioSpace — Logiciel de suivi de santé pour astronautes
 
+*English: [README.en.md](README.en.md)*
+
 Réponse au défi **NASA Space Apps 2026 : « Créer un logiciel de surveillance de la santé pour les
 astronautes en mission spatiale »**.
 
