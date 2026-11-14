@@ -8,6 +8,10 @@ Submission is final.
 
 ---
 
+## Team Name
+
+BioSpace Systems
+
 ## Project Name
 
 BioSpace
