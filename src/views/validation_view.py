@@ -19,6 +19,14 @@ def render(ctx):
     n_seeds = c1.select_slider("Missions simulées par scénario", [10, 20, 40, 80], value=40)
     missing = c2.select_slider("Mesures manquantes", [0.0, 0.1, 0.2], value=0.0,
                                format_func=lambda x: f"{int(x * 100)} %")
+    # Streamlit exécute tous les onglets à chaque clic : on ne lance la simulation (plusieurs
+    # secondes) que sur demande, puis le résultat reste en cache.
+    if not st.session_state.get("validation_started"):
+        if st.button("Lancer la validation", type="primary", key="validation_start"):
+            st.session_state["validation_started"] = True
+            st.rerun()
+        st.info("La simulation prend quelques secondes ; elle n'est lancée que sur demande.")
+        return
     with st.spinner("Simulation en cours..."):
         res = _run(n_seeds, missing)
 

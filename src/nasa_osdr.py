@@ -27,7 +27,7 @@ API = f"{BASE}/osdr/data/osd"
 MAX_DOWNLOAD_BYTES = 25 * 1024 * 1024
 MAX_JSON_BYTES = 32 * 1024 * 1024     # certaines métadonnées d'étude dépassent 8 Mo
 ALLOWED_HOSTS = {"osdr.nasa.gov"}      # hôte de l'API et des liens retournés par l'API
-TIMEOUT = 40
+TIMEOUT = 20
 # UA de navigateur : certains pare-feu NASA refusent les agents inconnus (HTTP 403).
 USER_AGENT = ("Mozilla/5.0 (compatible; BioSpace-NASA-OSDR-Viewer/1.1; "
               "+https://github.com/djohozinc-ship-it/NASA-Challenge)")
@@ -171,6 +171,8 @@ def study_files(study_id: str | int, page: int = 0, size: int = 25) -> list[dict
             break
         except OSDRError as exc:
             last_error = exc
+            if "HTTP" not in str(exc):
+                break      # réseau/DNS/certificat : réessayer une autre URL ne ferait qu'attendre deux fois
     if payload is None:
         raise last_error
     records = []

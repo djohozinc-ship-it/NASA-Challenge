@@ -90,3 +90,14 @@ def test_backup_is_a_valid_database(conn, astro, tmp_path):
     other = storage.connect(dest)
     assert len(storage.load_frame(other, astro)) == 1
     other.close()
+
+
+def test_shared_connection_can_be_used_from_another_thread(tmp_path):
+    """Streamlit exécute chaque interaction dans un thread différent : la connexion en cache doit le permettre."""
+    import threading
+    conn = storage.connect(tmp_path / "shared.db", shared=True)
+    result = []
+    worker = threading.Thread(target=lambda: result.append(storage.list_astronauts(conn)))
+    worker.start()
+    worker.join()
+    assert result == [[]]

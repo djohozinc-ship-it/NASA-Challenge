@@ -22,7 +22,14 @@ log = logging.getLogger("biospace")
 st.set_page_config(page_title="BioSpace · Copilote santé de l'équipage", layout="wide")
 st.markdown(CSS, unsafe_allow_html=True)
 
-conn = storage.connect()
+@st.cache_resource(show_spinner=False)
+def get_connection(path):
+    """Une seule connexion SQLite réutilisée à chaque interaction (au lieu d'une nouvelle,
+    jamais fermée, à chaque clic). Le chemin sert de clé : une autre base, une autre connexion."""
+    return storage.connect(path, shared=True)
+
+
+conn = get_connection(str(storage.db_path()))
 
 
 def safe(name, render, ctx):

@@ -65,11 +65,15 @@ def db_path():
     return Path(os.environ.get("BIOSPACE_DB") or DEFAULT_DB)
 
 
-def connect(path=None):
-    """Ouvre la base (créée si absente) et garantit le schéma."""
+def connect(path=None, shared=False):
+    """Ouvre la base (créée si absente) et garantit le schéma.
+
+    shared=True autorise l'usage depuis plusieurs threads : Streamlit exécute chaque
+    interaction dans un thread différent, et la connexion y est gardée en cache.
+    """
     path = Path(path) if path else db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path)
+    conn = sqlite3.connect(path, check_same_thread=not shared)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(SCHEMA)

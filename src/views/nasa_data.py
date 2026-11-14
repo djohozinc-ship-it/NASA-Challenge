@@ -46,23 +46,32 @@ def _render_biology():
         f"[Ouvrir la fiche officielle OSDR](https://osdr.nasa.gov/bio/repo/data/studies/OSD-{study_id})"
     )
 
-    try:
-        with st.spinner("Récupération des métadonnées depuis NASA OSDR..."):
-            metadata = _metadata(study_id)
-        st.success(f"Métadonnées OSDR récupérées pour OSD-{study_id}.")
-        with st.expander("Métadonnées complètes de l'étude", expanded=False):
-            st.json(metadata)
-    except nasa_osdr.OSDRError as exc:
-        st.warning(str(exc))
-        st.info("La fiche officielle reste consultable via le lien ci-dessus.")
+    # Streamlit réexécute cet onglet à chaque clic dans l'application : sans ce garde-fou, un
+    # réseau indisponible bloquerait chaque interaction jusqu'au délai d'attente. Le chargement
+    # se fait donc à la demande et un échec est mémorisé (pas de nouvelle tentative automatique).
+    loaded_key, error_key = f"nasa_loaded_{study_id}", f"nasa_error_{study_id}"
+    if not st.session_state.get(loaded_key):
+        if st.session_state.get(error_key):
+            st.warning(st.session_state[error_key])
+            st.info("La fiche officielle reste consultable via le lien ci-dessus. "
+                    "Diagnostic détaillé : `python -m src.nasa_osdr`.")
+        label_btn = "Réessayer" if st.session_state.get(error_key) else "Charger cette étude depuis NASA OSDR"
+        if st.button(label_btn, type="primary", key=f"nasa_load_{study_id}"):
+            try:
+                with st.spinner("Récupération depuis NASA OSDR..."):
+                    _metadata(study_id)
+                    _files(study_id)
+                st.session_state[loaded_key] = True
+                st.session_state.pop(error_key, None)
+            except nasa_osdr.OSDRError as exc:
+                st.session_state[error_key] = str(exc)
+            st.rerun()
         return
 
-    try:
-        with st.spinner("Inventaire des fichiers publics..."):
-            files = _files(study_id)
-    except nasa_osdr.OSDRError as exc:
-        st.warning(f"Inventaire des fichiers indisponible : {exc}")
-        return
+    metadata, files = _metadata(study_id), _files(study_id)   # déjà en cache : instantané
+    st.success(f"Données OSDR chargées pour OSD-{study_id}.")
+    if st.checkbox("Afficher les métadonnées complètes de l'étude", key=f"nasa_meta_{study_id}"):
+        st.json(metadata)    # volumineux : envoyé au navigateur seulement si demandé
 
     if not files:
         st.info("L'API n'a retourné aucun fichier public sur cette page. Consultez la section Files de la fiche OSDR.")
