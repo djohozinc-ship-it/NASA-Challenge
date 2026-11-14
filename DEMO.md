@@ -26,7 +26,7 @@
 | 1:35 | **+3 j** (orange), puis **+14 j** : alerte résolue | « Quand il est revenu à la normale 3 jours de suite, l'alerte se ferme. Pas de clignotement. » |
 | 1:50 | Profil **Cdt Réel** > **Bilan du jour** : tension 170 > Enregistrer | « Une valeur dangereuse passe en rouge tout de suite, même avant la fin de la calibration. » |
 | 2:15 | Onglet **Rapport** > Générer le PDF, l'ouvrir | « Prêt à transmettre quand la liaison revient : état, alertes, tendances, journal. » |
-| 2:35 | Onglet **Validation** | « Mesuré sur 40 missions simulées : 4,9 % de jours en alerte sur une mission normale, 0,02 % en rouge, 7 scénarios sur 7 détectés. » |
+| 2:35 | Onglet **Validation** | « Mesuré sur 40 missions simulées : 4,5 % de jours en alerte sur une mission normale, 0,02 % en rouge, 7 scénarios sur 7 détectés. » |
 | 2:55 | Retour vue d'ensemble | « BioSpace : l'astronaute reste acteur de sa santé, même seul. » |
 
 Plan B si le temps est court : sauter le profil réel et ouvrir directement le rapport.
