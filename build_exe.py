@@ -22,6 +22,7 @@ def main():
         "--collect-all", "streamlit", "--copy-metadata", "streamlit",
         "--collect-submodules", "uvicorn", "--collect-submodules", "starlette",
         "--collect-all", "plotly", "--collect-all", "reportlab",
+        "--collect-data", "certifi",   # certificats TLS pour l'API NASA OSDR
         "--hidden-import", "matplotlib.backends.backend_agg",
         "--add-data", f"{ROOT / 'app.py'}{SEP}.",
         "--add-data", f"{ROOT / 'src'}{SEP}src",

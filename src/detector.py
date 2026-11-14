@@ -11,7 +11,7 @@ Le DataFrame d'entrée contient une ligne par jour calendaire (voir
 import numpy as np
 import pandas as pd
 
-from src.config import CRITICAL, DIRECTION, DOMAIN_ORDER, DOMAINS
+from src.config import CRITICAL, DIRECTION, DOMAIN_ORDER, DOMAINS, MIN_STD
 
 BASELINE_DAYS = 30    # période de référence (jours "normaux")
 BASELINE_MIN_OBS = 15  # mesures minimales dans la référence pour un indicateur
@@ -42,7 +42,9 @@ def compute_zscores(df):
     baseline = df.iloc[:BASELINE_DAYS][cols]
     n_base = baseline.count()
     mean = baseline.mean()
-    std = baseline.std().replace(0, np.nan)   # évite la division par zéro
+    # Plancher d'écart-type : une baseline constante ne doit ni désactiver l'indicateur
+    # (division par zéro) ni rendre le moindre écart démesuré. NaN (< 2 mesures) reste NaN.
+    std = np.maximum(baseline.std(), pd.Series(MIN_STD).reindex(baseline.columns))
     insufficient = n_base < BASELINE_MIN_OBS
     mean[insufficient] = np.nan
 

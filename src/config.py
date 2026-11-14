@@ -26,7 +26,7 @@ DOMAIN_ORDER = [
 INDICATORS = {
     "resting_hr":    {"domain": "Cardiovasculaire",   "direction": "both", "label": "Fréquence cardiaque au repos", "unit": "bpm",   "decimals": 0, "valid": (20, 250),  "critical": (40, 130),   "source": "auto"},
     "hrv":           {"domain": "Cardiovasculaire",   "direction": "down", "label": "Variabilité cardiaque (RMSSD)", "unit": "ms",    "decimals": 0, "valid": (1, 300),   "critical": None,        "source": "auto"},
-    "bp_systolic":   {"domain": "Cardiovasculaire",   "direction": "up",   "label": "Tension systolique",            "unit": "mmHg",  "decimals": 0, "valid": (50, 260),  "critical": (None, 160), "source": "auto"},
+    "bp_systolic":   {"domain": "Cardiovasculaire",   "direction": "both", "label": "Tension systolique",           "unit": "mmHg",  "decimals": 0, "valid": (50, 260),  "critical": (80, 160),   "source": "auto"},
     "exercise_min":  {"domain": "Os et muscles",      "direction": "down", "label": "Activité physique",             "unit": "min/j", "decimals": 0, "valid": (0, 600),   "critical": None,        "source": "auto"},
     "weight":        {"domain": "Os et muscles",      "direction": "down", "label": "Poids",                         "unit": "kg",    "decimals": 1, "valid": (20, 250),  "critical": None,        "source": "auto"},
     "visual_acuity": {"domain": "Neuro-oculaire",     "direction": "down", "label": "Acuité visuelle",               "unit": "",      "decimals": 2, "valid": (0, 2.0),   "critical": (0.6, None), "source": "saisie"},
@@ -41,6 +41,18 @@ INDICATORS = {
     "stress":        {"domain": "Comportement",       "direction": "up",   "label": "Stress quotidien",              "unit": "/10",   "decimals": 1, "valid": (0, 10),    "critical": None,        "source": "saisie"},
     "social":        {"domain": "Comportement",       "direction": "down", "label": "Contacts sociaux",              "unit": "/10",   "decimals": 1, "valid": (0, 10),    "critical": None,        "source": "saisie"},
 }
+
+# Écart-type minimal retenu pour la baseline de chaque indicateur (même unité que l'indicateur).
+# Sans plancher, une référence très régulière (douleur toujours à 0, poids constant) donne un
+# écart-type nul ou minuscule : soit l'indicateur n'est jamais évalué, soit le moindre écart
+# produit un z-score démesuré. Ces valeurs correspondent à la résolution réaliste de la mesure.
+MIN_STD = {
+    "resting_hr": 1.5, "hrv": 2.5, "bp_systolic": 2.5, "exercise_min": 10.0, "weight": 0.15,
+    "visual_acuity": 0.02, "back_pain": 0.7, "fatigue": 0.7, "hemoglobin": 0.15,
+    "temperature": 0.1, "symptoms": 0.7, "dose_rate": 0.02, "sleep_hours": 0.3,
+    "mood": 0.7, "stress": 0.7, "social": 0.7,   # échelles /10 : ~1 point d'auto-évaluation
+}
+assert set(MIN_STD) == set(INDICATORS), "MIN_STD doit couvrir exactement les indicateurs"
 
 DOMAINS = {k: v["domain"] for k, v in INDICATORS.items()}
 DIRECTION = {k: v["direction"] for k, v in INDICATORS.items()}

@@ -67,6 +67,38 @@ def test_constant_baseline_does_not_crash():
     assert set(current_status(compute_zscores(df))) == set(DOMAIN_ORDER)
 
 
+def test_constant_baseline_still_detects_a_large_jump():
+    """Une référence parfaitement régulière (douleur toujours à 0) ne doit pas désactiver l'indicateur."""
+    df = generate(scenario="normal", seed=25)
+    df.loc[:BASELINE_DAYS - 1, "back_pain"] = 0.0
+    df.loc[BASELINE_DAYS:, "back_pain"] = 8.0
+    assert current_status(compute_zscores(df))["Colonne vertébrale"] == "rouge"
+
+
+def test_near_constant_baseline_does_not_explode_on_small_change():
+    """Un écart minime sur une référence quasi constante ne doit pas donner un z-score démesuré."""
+    df = generate(scenario="normal", seed=25)
+    df["back_pain"] = 0.0
+    df.loc[5, "back_pain"] = 1.0       # écart-type de référence minuscule
+    df.loc[BASELINE_DAYS + 10:, "back_pain"] = 1.0   # +1 sur 10 : changement faible
+    assert current_status(compute_zscores(df))["Colonne vertébrale"] != "rouge"
+
+
+def test_hypotension_is_detected():
+    """Une chute durable de la tension est aussi un signal (écart dans les deux sens)."""
+    df = generate(scenario="normal", seed=25)
+    df.loc[100:, "bp_systolic"] = 88
+    assert current_status(compute_zscores(df))["Cardiovasculaire"] == "rouge"
+
+
+def test_critical_low_blood_pressure_triggers_red():
+    df = generate_demo("normal").iloc[:10].copy()
+    df.loc[9, "bp_systolic"] = 75
+    _, details = evaluate(df)
+    assert details["Cardiovasculaire"]["status"] == "rouge"
+    assert details["Cardiovasculaire"]["critical"][0]["indicator"] == "bp_systolic"
+
+
 def test_calibration_has_no_statistical_status():
     df = generate_demo("sleep_stress").iloc[:20]
     z, details = evaluate(df)

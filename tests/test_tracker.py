@@ -54,13 +54,15 @@ def test_sync_is_idempotent(conn, astro):
 
 
 def test_user_action_prevents_auto_escalation(conn, astro):
-    demo.load_scenario(conn, astro, "infection", 123)
+    # Jour 125 : l'alerte est déjà rouge. Une aggravation (orange -> rouge) réinitialiserait
+    # volontairement l'action « fait » (voir sync_alerts), ce qui n'est pas ce qu'on teste ici.
+    demo.load_scenario(conn, astro, "infection", 125)
     df = storage.load_frame(conn, astro)
     _, details = evaluate(df)
     tracker.sync_alerts(conn, astro, details, df["date"].iloc[-1])
     item = tracker.open_items(conn, astro)[0]
     tracker.set_state(conn, astro, item["id"], "fait", df["date"].iloc[-1], "Repos")
-    run_days(conn, astro, 123, 126)
+    run_days(conn, astro, 125, 128)
     states = {i["state"] for i in tracker.open_items(conn, astro)}
     assert "escalade" not in states
 

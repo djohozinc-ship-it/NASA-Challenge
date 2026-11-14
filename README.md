@@ -23,7 +23,8 @@ rapport pour l'équipe médicale. Tout fonctionne **hors ligne**.
 | **Boucle d'action suivie** | À faire, fait, reporté, signalé. Escalade automatique vers l'équipe médicale sans action. |
 | **Rapport médical** | PDF (état, alertes, indicateurs, tendances, journal) et CSV, générés localement. |
 | **Persistance locale** | Base SQLite, profils multiples, journal des événements, sauvegarde en un clic. |
-| **Mode autonome** | Le suivi local reste utilisable sans réseau ; la consultation OSDR est facultative et nécessite Internet. |\n| **Données NASA** | Consultation des études humaines OSDR et de leurs fichiers publics, avec liens vers les archives physiologiques NLSP. |
+| **Mode autonome** | Le suivi local reste utilisable sans réseau ; la consultation OSDR est facultative et nécessite Internet. |
+| **Données NASA** | Consultation des études humaines OSDR et de leurs fichiers publics, avec liens vers les archives physiologiques NLSP. |
 | **Validation mesurée** | Page dédiée : fausses alertes et délais de détection sur des centaines de missions simulées. |
 
 ## Démarrage rapide
@@ -53,7 +54,7 @@ Il se construit pour le système sur lequel on lance le script. Vérifié ici su
 
 | Système | Indicateurs | Seuil critique absolu |
 |---|---|---|
-| Cardiovasculaire | Fréquence cardiaque au repos, variabilité cardiaque (RMSSD), tension systolique | FC < 40 ou > 130 bpm ; tension > 160 mmHg |
+| Cardiovasculaire | Fréquence cardiaque au repos, variabilité cardiaque (RMSSD), tension systolique | FC < 40 ou > 130 bpm ; tension < 80 ou > 160 mmHg |
 | Os et muscles | Activité physique, poids | |
 | Neuro-oculaire | Acuité visuelle (risque SANS) | acuité < 0,6 |
 | Colonne vertébrale | Douleur dorsale | |
@@ -68,7 +69,9 @@ Les seuils et unités sont définis dans `src/config.py`, un seul endroit à mod
 1. **Calibration** : les 30 premiers jours fixent moyenne et écart-type de chaque indicateur.
 2. **Lissage** : moyenne glissante sur 7 jours, mesures manquantes tolérées.
 3. **Écart** : z-score normalisé par `σ · √(1/n + 1/n_réf)` (bruit de la moyenne et incertitude de la
-   référence), orienté selon le sens dangereux de chaque indicateur.
+   référence), orienté selon le sens dangereux de chaque indicateur (dans les deux sens pour la tension).
+   L'écart-type de référence est borné par un plancher réaliste par indicateur (`MIN_STD`), pour qu'une
+   référence parfaitement régulière (douleur toujours à 0) ne désactive pas l'indicateur.
 4. **Persistance** : l'écart doit durer 3 jours consécutifs.
 5. **Système** : état de son indicateur le plus préoccupant. Orange dès 2,5, rouge dès 4,0.
 6. **Suivi** : une alerte est escaladée sans action après 1 jour (rouge) ou 3 jours (orange), et close
@@ -79,8 +82,8 @@ Les seuils et unités sont définis dans `src/config.py`, un seul endroit à mod
 Mesurés sur 40 missions simulées par scénario (graines distinctes de la démonstration), 144 jours
 évalués par mission après calibration. Reproductibles dans l'onglet **Validation**.
 
-- Mission nominale : **4,9 % des jours** avec au moins un système orange ou rouge, **0,02 %** en rouge.
-  Avec 10 % de mesures manquantes : 5,1 % et 0,02 %.
+- Mission nominale : **4,5 % des jours** avec au moins un système orange ou rouge, **0,02 %** en rouge.
+  Avec 10 % de mesures manquantes : 4,8 % et 0,02 %.
 - **7 scénarios d'anomalie sur 7 détectés dans 100 % des missions.**
 
 | Scénario | Système | Délai médian de détection |
@@ -103,7 +106,9 @@ app.py                  Interface (Streamlit) : profils, onglets
 .streamlit/config.toml  Thème et paramètres Streamlit
 launcher.py             Lanceur local (port libre, navigateur, dossier de données)
 build_exe.py            Construction de l'exécutable (PyInstaller)
-src/config.py           Indicateurs, domaines, bornes, seuils critiques\nsrc/nasa_osdr.py        Client prudent de l'API publique NASA OSDR\nsrc/views/nasa_data.py  Consultation des études biologiques OSDR et sources physiologiques\ndocs/NASA_DATA_SOURCES.md Inventaire des sources, licences et limites d'accès
+src/config.py           Indicateurs, domaines, bornes, seuils critiques
+src/nasa_osdr.py        Client prudent de l'API publique NASA OSDR
+src/views/nasa_data.py  Consultation des études biologiques OSDR et sources physiologiques
 src/generator.py        Données synthétiques et 8 scénarios
 src/detector.py         Baseline, z-scores, persistance, seuils critiques
 src/storage.py          Base SQLite : profils, mesures, journal, actions
@@ -117,10 +122,13 @@ src/applog.py           Journalisation locale
 src/actions.py          Conseils par système
 src/ui.py               Éléments visuels (HTML/CSS hors ligne)
 src/views/              Une vue par onglet
-tests/                  67 tests automatisés
+docs/NASA_DATA_SOURCES.md Inventaire des sources, licences et limites d'accès
+tests/                  84 tests automatisés
 ```
 
 Tests : `python -m pytest`
+
+Diagnostic de la connexion NASA OSDR (DNS, certificats, API) : `python -m src.nasa_osdr`
 
 ## Format d'import CSV
 
