@@ -84,8 +84,6 @@ integrated as a read-only browser:
 - **NASA Spaceflight Standard Measures** and **NASA Life Sciences Portal (NLSP)**: used to choose the monitored
   variables (actigraphy, sleep, cardiovascular, sensorimotor, muscle). Detailed individual data require an
   official request, which BioSpace does not bypass.
-- NASA's published work on spaceflight-associated neuro-ocular syndrome and on radiation exposure inspired the
-  neuro-ocular and radiation indicators.
 
 OSDR observations are laboratory biomarkers taken at discrete time points; they are never copied into the
 profile database and never converted into heart rate, blood pressure or other vital signs.
